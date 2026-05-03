@@ -1,0 +1,46 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cpp:
+    name: cpp / ${{ matrix.os }} / mppi=${{ matrix.mppi }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+        mppi: [ON, OFF]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DNAV_CORE_WITH_MPPI=${{ matrix.mppi }} -DNAV_CORE_BUILD_TESTS=ON
+      - name: Build
+        run: cmake --build build -j
+      # Tests are wired up starting from milestone M1.
+      # - name: Test
+      #   run: ctest --test-dir build --output-on-failure
+
+  python:
+    name: python / ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install '.[sim,test]'
+      - name: Pytest
+        env:
+          MPLBACKEND: Agg
+        run: pytest

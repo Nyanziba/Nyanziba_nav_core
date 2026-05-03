@@ -1,0 +1,64 @@
+[build-system]
+requires = ["scikit-build-core>=0.8", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "texnitis_nav_core"
+version = "0.0.1"
+description = "ROS-independent navigation core (A* / Pure Pursuit / MPPI) with Python bindings and a 2D simulator"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Nyanziba" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+sim = [
+    "matplotlib>=3.7",
+    "pyyaml>=6.0",
+]
+test = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+]
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=2.0",
+    "myst-parser>=2.0",
+]
+dev = [
+    "texnitis_nav_core[sim,test,docs]",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "pydocstyle>=6.3",
+]
+
+[tool.scikit-build]
+# Real CMake wiring lands in milestone M1. The current scaffold purposely
+# disables the bindings build so `pip install .` succeeds before any C++
+# sources exist.
+cmake.version = ">=3.20"
+cmake.args = ["-DNAV_CORE_BUILD_PYTHON=OFF"]
+wheel.packages = ["python/texnitis_nav_core"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra"
+testpaths = ["tests_python"]
+markers = [
+    "sim: scenario-driven simulator tests (may be slow / use matplotlib in headless mode)",
+    "binding: low-level pybind11 binding sanity checks",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "D"]
+ignore = ["D203", "D213"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

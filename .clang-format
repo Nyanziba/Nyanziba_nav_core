@@ -1,0 +1,34 @@
+Language: Cpp
+BasedOnStyle: Google
+ColumnLimit: 250
+IndentWidth: 4
+
+SpaceBeforeParens: Always
+AlignAfterOpenBracket: AlwaysBreak
+AlignArrayOfStructures: Right
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+BreakBeforeBraces: Attach
+PointerAlignment: Right
+AllowShortCaseLabelsOnASingleLine: false
+
+IncludeCategories:
+  - Regex: <[a-z_]*>
+    Priority: 6
+    CaseSensitive: true
+  - Regex: <.*\.h>
+    Priority: 5
+    CaseSensitive: true
+  - Regex: boost/.*
+    Priority: 4
+    CaseSensitive: true
+  - Regex: <.*>
+    Priority: 2
+    CaseSensitive: true
+  - Regex: '".*"'
+    Priority: 1
+    CaseSensitive: true

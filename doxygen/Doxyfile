@@ -1,0 +1,20 @@
+# Doxygen scaffold for texnitis_nav_core.
+# Real configuration lands in milestone M1. The values below are the minimum
+# needed for `doxygen doxygen/Doxyfile` to succeed once headers are added.
+
+PROJECT_NAME           = "texnitis_nav_core"
+PROJECT_BRIEF          = "ROS-independent navigation core"
+PROJECT_NUMBER         = 0.0.1
+OUTPUT_DIRECTORY       = ../docs/api/cpp
+INPUT                  = ../include ../src
+RECURSIVE              = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+WARN_IF_UNDOCUMENTED   = NO
+QUIET                  = YES
+JAVADOC_AUTOBRIEF      = YES
+USE_MDFILE_AS_MAINPAGE = ../README.md
