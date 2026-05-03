@@ -1,0 +1,64 @@
+id: S-01
+description: |
+  Stateful GoalChecker must NOT release `xy_goal_reached_` once it is set.
+  The robot reaches the goal in XY, then performs a small in-place rotation
+  during which a tiny localization wobble briefly nudges it past
+  `goal_xy_tolerance`. The flag must stay True so the controller does not
+  command a fresh translation and oscillate.
+seed: 42
+tolerances:
+  pose_xy: 1.0e-4
+  pose_yaw: 1.0e-3
+  twist: 1.0e-3
+trials:
+  count: 1
+  seed_strategy: fixed
+plugins:
+  planner:
+    name: astar
+    params:
+      occupied_threshold: 65
+      inflation_radius: 0.20
+      unknown_is_obstacle: true
+  controller:
+    name: lookahead
+    params:
+      kp_xy: 1.0
+      kp_yaw: 1.5
+      max_speed_xy: 0.25
+      max_speed_yaw: 0.8
+      lookahead_dist: 0.30
+      goal_xy_tolerance: 0.05
+      goal_yaw_tolerance: 0.05
+      goal_stateful: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  occupancy: |
+    ..........
+    ..........
+    ..........
+    ..........
+    ..........
+disturbance:
+  # In-place wobble injected only after xy_goal_reached_ is True. The runner
+  # implements this via `enable_disturbance` mid-sequence.
+  pose_noise:
+    sigma_xy: 0.0
+    sigma_yaw: 0.0
+sequence:
+  - {action: set_pose,  pose: [0.10, 0.10, 0.0]}
+  - {action: set_goal,  pose: [0.50, 0.50, 1.5708]}
+  - {action: drive_until, condition: xy_goal_reached, max_steps: 200, dt: 0.05}
+  - {action: assert,    key: xy_goal_reached, value: true}
+  - {action: enable_disturbance, kind: pose_noise, value: {sigma_xy: 0.06, sigma_yaw: 0.0}}
+  - {action: drive_until, condition: goal_reached, max_steps: 200, dt: 0.05}
+  - {action: assert,    key: outcome, value: SUCCESS}
+  - {action: assert,    key: xy_goal_reached, value: true}
+  - {action: assert,    key: metrics.goal_reach_flip_count, value: 1}
+metrics:
+  cmd_vel_jerk_max: 6.0
+  cmd_vel_rms_at_rest: 0.05
+  goal_reach_flip_count: 1
+  collision_count: 0
+  nan_inf_count: 0

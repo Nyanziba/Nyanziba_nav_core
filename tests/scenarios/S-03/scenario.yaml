@@ -1,0 +1,57 @@
+id: S-03
+description: |
+  While the robot is mid-flight toward goal A, a new goal B is injected. The
+  controller must `reset()` so that acceleration history (`last_vx_`,
+  `last_wz_`) does not carry over and produce a velocity step that exceeds
+  the configured max acceleration. We assert there is no jerk spike across
+  the goal switch and that B is reached without collisions.
+seed: 42
+tolerances:
+  pose_xy: 1.0e-4
+  pose_yaw: 1.0e-3
+  twist: 1.0e-3
+trials:
+  count: 1
+  seed_strategy: fixed
+plugins:
+  planner:
+    name: astar
+    params:
+      occupied_threshold: 65
+      inflation_radius: 0.20
+      unknown_is_obstacle: true
+  controller:
+    name: pure_pursuit          # diff drive Pure Pursuit; max_acc enforcement is the point
+    params:
+      pp_max_speed_xy: 0.30
+      pp_max_speed_yaw: 0.80
+      pp_max_acc_xy: 0.50
+      pp_max_acc_yaw: 1.50
+      pp_lookahead_dist: 0.40
+      goal_xy_tolerance: 0.05
+      goal_yaw_tolerance: 0.10
+      goal_stateful: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  occupancy: |
+    ..........
+    ..........
+    ..........
+    ..........
+    ..........
+sequence:
+  - {action: set_pose, pose: [0.10, 0.10, 0.0]}
+  - {action: set_goal, pose: [0.90, 0.10, 0.0]}    # goal A: drive +x
+  - {action: drive_until, condition: step_count >= 30, max_steps: 30, dt: 0.05}
+  # mid-flight injection of goal B that requires a 90 degree turn
+  - {action: set_goal, pose: [0.10, 0.90, 1.5708]}
+  - {action: drive_until, condition: goal_reached, max_steps: 400, dt: 0.05}
+  - {action: assert, key: outcome, value: SUCCESS}
+  # The point of the test: cmd_vel jerk must stay bounded across the switch.
+  - {action: assert, key: metrics.cmd_vel_jerk_max, value: 4.0, tolerance: 0.5}
+  - {action: assert, key: collision_count, value: 0}
+metrics:
+  cmd_vel_jerk_max: 4.0
+  collision_count: 0
+  nan_inf_count: 0
