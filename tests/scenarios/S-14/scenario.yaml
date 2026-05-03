@@ -1,0 +1,70 @@
+id: S-14
+description: |
+  Real-robot equivalent: control loop runs with k-step latency on cmd_vel,
+  the actuator quantizes commands to a CAN step, acceleration is bounded,
+  and the initial pose is offset from where the robot 'thinks' it is.
+  The scenario sweeps a few combinations of (latency_steps, max_acc) and
+  asserts the goal is still reached within max_steps without collisions
+  and without NaN/Inf in cmd_vel.
+seed: 42
+tolerances:
+  pose_xy: 5.0e-3
+  pose_yaw: 5.0e-2
+  metrics_relative: 0.10
+trials:
+  count: 5
+  seed_strategy: per_trial
+plugins:
+  planner:
+    name: astar
+    params:
+      occupied_threshold: 65
+      inflation_radius: 0.25
+      unknown_is_obstacle: true
+  controller:
+    name: pure_pursuit
+    params:
+      pp_max_speed_xy: 0.30
+      pp_max_speed_yaw: 0.80
+      pp_max_acc_xy: 0.50
+      pp_lookahead_dist: 0.40
+      goal_xy_tolerance: 0.06
+      goal_yaw_tolerance: 0.12
+      goal_stateful: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  occupancy: |
+    ..........
+    ..........
+    ..........
+    ..........
+    ..........
+disturbance:
+  pose_noise:
+    sigma_xy: 0.0
+    sigma_yaw: 0.0
+  cmd_vel_latency_steps: 2          # 2 * dt = 0.10 s actuation delay
+  cmd_vel_quantization:
+    linear: 0.02                     # 2 cm/s CAN step
+    angular: 0.05                    # 0.05 rad/s CAN step
+  max_acc:
+    linear: 0.5
+    angular: 1.5
+  initial_pose_offset:
+    sigma_xy: 0.03                   # robot thinks it is here, actually offset by N(0, 3 cm)
+    sigma_yaw: 0.05
+sweep:
+  # The runner expands this into the trial set.
+  latency_steps: [0, 1, 2, 3]
+  max_acc: [0.5, 1.0, 2.0]
+sequence:
+  - {action: set_pose, pose: [0.10, 0.10, 0.0]}
+  - {action: set_goal, pose: [0.80, 0.40, 0.0]}
+  - {action: drive_until, condition: goal_reached, max_steps: 600, dt: 0.05}
+  - {action: assert, key: outcome,                       value: SUCCESS}
+  - {action: assert, key: metrics.collision_count,       value: 0}
+  - {action: assert, key: metrics.nan_inf_count,         value: 0}
+metrics:
+  collision_count: 0
+  nan_inf_count: 0

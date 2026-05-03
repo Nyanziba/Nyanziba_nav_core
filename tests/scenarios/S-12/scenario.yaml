@@ -1,0 +1,54 @@
+id: S-12
+description: |
+  Smoke test for the simulator harness itself. Drive a U-shaped corridor
+  with A* + Lookahead, then send a return goal. Both legs must succeed
+  within max_steps, no collision, total goal_reach_flip_count == 2.
+seed: 42
+tolerances:
+  pose_xy: 1.0e-3
+  pose_yaw: 1.0e-2
+trials:
+  count: 1
+  seed_strategy: fixed
+plugins:
+  planner:
+    name: astar
+    params:
+      occupied_threshold: 65
+      inflation_radius: 0.20
+      unknown_is_obstacle: true
+  controller:
+    name: lookahead
+    params:
+      kp_xy: 1.0
+      kp_yaw: 1.2
+      max_speed_xy: 0.25
+      max_speed_yaw: 0.8
+      lookahead_dist: 0.30
+      goal_xy_tolerance: 0.05
+      goal_yaw_tolerance: 0.10
+      goal_stateful: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  # U-shaped corridor (open at the top).
+  occupancy: |
+    ..........
+    .#######..
+    .#......#.
+    .#......#.
+    .########.
+    ..........
+sequence:
+  - {action: set_pose, pose: [0.30, 0.45, 0.0]}      # inside the U, near the left wall
+  - {action: set_goal, pose: [0.70, 0.45, 0.0]}      # opposite end inside the U
+  - {action: drive_until, condition: goal_reached, max_steps: 400, dt: 0.05}
+  - {action: assert, key: outcome, value: SUCCESS}
+  - {action: set_goal, pose: [0.30, 0.45, 3.1416]}   # turn around and head back
+  - {action: drive_until, condition: goal_reached, max_steps: 400, dt: 0.05}
+  - {action: assert, key: outcome, value: SUCCESS}
+  - {action: assert, key: metrics.goal_reach_flip_count, value: 2}
+metrics:
+  goal_reach_flip_count: 2
+  collision_count: 0
+  nan_inf_count: 0

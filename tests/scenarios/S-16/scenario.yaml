@@ -1,0 +1,65 @@
+id: S-16
+description: |
+  Localization is shaky: every step the reported current_pose is offset by
+  Gaussian noise N(0, sigma_xy) on x/y and N(0, sigma_yaw) on yaw. We sweep
+  sigma values up to 2x the goal_xy_tolerance and assert:
+    (a) cmd_vel does not chatter when the robot is stationary at the goal
+        (cmd_vel_rms_at_rest <= 10 percent of static command magnitude)
+    (b) the stateful GoalChecker does not flip True->False once it has been
+        set, even when noise pushes the reported pose temporarily out of
+        tolerance
+    (c) average reach time does not blow up at small sigma
+seed: 1234
+tolerances:
+  pose_xy: 5.0e-2          # noisy; we measure system-level metrics, not exact poses
+  metrics_relative: 0.20
+trials:
+  count: 5
+  seed_strategy: per_trial
+plugins:
+  planner:
+    name: astar
+    params:
+      occupied_threshold: 65
+      inflation_radius: 0.20
+      unknown_is_obstacle: true
+  controller:
+    name: lookahead
+    params:
+      kp_xy: 1.0
+      kp_yaw: 1.2
+      max_speed_xy: 0.25
+      max_speed_yaw: 0.8
+      lookahead_dist: 0.30
+      goal_xy_tolerance: 0.05
+      goal_yaw_tolerance: 0.10
+      goal_stateful: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  occupancy: |
+    ..........
+    ..........
+    ..........
+    ..........
+    ..........
+disturbance:
+  pose_noise:
+    sigma_xy: 0.04         # 80% of xy_tolerance
+    sigma_yaw: 0.05
+sweep:
+  pose_noise_sigma_xy: [0.0, 0.02, 0.04, 0.08, 0.10]   # up to 2x xy_tolerance
+sequence:
+  - {action: set_pose, pose: [0.10, 0.10, 0.0]}
+  - {action: set_goal, pose: [0.80, 0.40, 0.0]}
+  - {action: drive_until, condition: goal_reached, max_steps: 600, dt: 0.05}
+  - {action: assert, key: outcome, value: SUCCESS}
+  # After reaching the goal, hold at the goal for 1 s and verify cmd_vel chatter.
+  - {action: wait, seconds: 1.0}
+  - {action: assert, key: metrics.cmd_vel_rms_at_rest,    value: 0.025}
+  - {action: assert, key: metrics.goal_reach_flip_count, value: 1}
+metrics:
+  cmd_vel_rms_at_rest: 0.025
+  goal_reach_flip_count: 1
+  collision_count: 0
+  nan_inf_count: 0

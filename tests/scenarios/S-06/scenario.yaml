@@ -1,0 +1,42 @@
+id: S-06
+description: |
+  setPlan() being called rapidly (simulating an external path source like the
+  old /external_path topic at 50 Hz) must not leak memory and must reset the
+  internal lookahead index to the head of the new path. We hammer the
+  controller with N different paths and assert no growth in path length is
+  retained between calls.
+seed: 42
+tolerances:
+  pose_xy: 1.0e-4
+trials:
+  count: 1
+  seed_strategy: fixed
+plugins:
+  controller:
+    name: lookahead
+    params:
+      kp_xy: 1.0
+      kp_yaw: 1.2
+      max_speed_xy: 0.25
+      max_speed_yaw: 0.8
+      lookahead_dist: 0.30
+      goal_xy_tolerance: 0.05
+      goal_yaw_tolerance: 0.10
+      goal_stateful: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  occupancy: |
+    ..........
+    ..........
+    ..........
+sequence:
+  - {action: set_pose, pose: [0.10, 0.10, 0.0]}
+  # Fire 50 distinct external paths quickly, each with 3 poses. The runner
+  # records peak memory and the path index after each setPlan.
+  - {action: hammer_set_path, count: 50, base_pose: [0.10, 0.10, 0.0],
+     step: [0.05, 0.0, 0.0], poses_per_path: 3}
+  - {action: assert, key: controller.path_index_after_set_plan, value: 0}
+  - {action: assert, key: controller.peak_path_length,         value: 3}
+metrics:
+  nan_inf_count: 0

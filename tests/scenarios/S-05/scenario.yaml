@@ -1,0 +1,37 @@
+id: S-05
+description: |
+  A* must be deterministic for the same (map, start, goal). We call planPath
+  N times back-to-back and assert the resulting Path2D matches byte-for-byte.
+  This protects against accidental nondeterminism creeping in (e.g. iterating
+  an unordered_map for tie-breaking).
+seed: 42
+tolerances:
+  pose_xy: 0.0          # exact match required
+  pose_yaw: 0.0
+trials:
+  count: 1
+  seed_strategy: fixed
+plugins:
+  planner:
+    name: astar
+    params:
+      occupied_threshold: 65
+      inflation_radius: 0.20
+      unknown_is_obstacle: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  occupancy: |
+    ..........
+    ..########
+    ..#.......
+    ..#.######
+    ..........
+sequence:
+  - {action: set_pose,    pose: [0.10, 0.10, 0.0]}
+  - {action: plan_only,   start: [0.10, 0.10, 0.0], goal: [0.90, 0.40, 0.0], repeat: 5}
+  - {action: assert,      key: planner.repeat_consistency, value: true}
+  - {action: assert,      key: outcome,                    value: SUCCESS}
+metrics:
+  collision_count: 0
+  nan_inf_count: 0

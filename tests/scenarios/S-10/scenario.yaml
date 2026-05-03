@@ -1,0 +1,49 @@
+id: S-10
+description: |
+  MPPI must be reproducible for a fixed seed and roughly equivalent between
+  the CasADi-backed dynamics evaluator and the Eigen fallback. We do not
+  expect bit-exact equality (different floating-point eval order), but the
+  agreed cmd_vel trajectory should agree within tolerances.metrics_relative.
+seed: 1234
+tolerances:
+  pose_xy: 1.0e-3
+  pose_yaw: 1.0e-3
+  twist: 1.0e-3
+  metrics_relative: 0.05    # 5% relative tolerance for comparing CasADi vs fallback
+trials:
+  count: 5
+  seed_strategy: per_trial   # 5 different seeds, all must pass independently
+plugins:
+  controller:
+    name: mecanum_mppi
+    params:
+      horizon: 25
+      num_samples: 256
+      lambda: 0.1
+      sigma:  [0.30, 0.30, 0.40]   # [ax, ay, alpha]
+      u_max:  [1.50, 1.50, 1.50]
+      dt: 0.05
+      goal_xy_tolerance: 0.05
+      goal_yaw_tolerance: 0.10
+      goal_stateful: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  occupancy: |
+    ..........
+    ..........
+    ..........
+    ..........
+    ..........
+sequence:
+  - {action: set_pose,    pose: [0.10, 0.10, 0.0]}
+  - {action: set_goal,    pose: [0.80, 0.40, 0.0]}
+  - {action: drive_until, condition: goal_reached, max_steps: 200, dt: 0.05}
+  - {action: assert,      key: outcome, value: SUCCESS}
+  # Cross-check against the same trial with the alternate engine. The runner
+  # records both runs and compares within tolerances.metrics_relative.
+  - {action: assert,      key: mppi.engine_agreement, value: true}
+metrics:
+  goal_reach_flip_count: 1
+  collision_count: 0
+  nan_inf_count: 0

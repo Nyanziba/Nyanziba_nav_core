@@ -1,0 +1,90 @@
+id: S-15
+description: |
+  Numeric edge cases. We exercise each in its own sub-case (the runner
+  iterates the `cases:` block); each sub-case must terminate with one of
+  the listed outcomes, must not crash, and must not produce NaN/Inf.
+seed: 42
+tolerances:
+  pose_xy: 1.0e-6
+  pose_yaw: 1.0e-6
+  twist: 1.0e-9
+trials:
+  count: 1
+  seed_strategy: fixed
+plugins:
+  planner:
+    name: astar
+    params:
+      occupied_threshold: 65
+      inflation_radius: 0.10
+      unknown_is_obstacle: true
+  controller:
+    name: lookahead
+    params:
+      kp_xy: 1.0
+      kp_yaw: 1.2
+      max_speed_xy: 0.25
+      max_speed_yaw: 0.8
+      lookahead_dist: 0.30
+      goal_xy_tolerance: 0.05
+      goal_yaw_tolerance: 0.10
+      goal_stateful: true
+cases:
+  - name: zero_length_plan
+    map:
+      resolution: 0.10
+      origin: [0.0, 0.0]
+      occupancy: |
+        ..........
+        ..........
+    sequence:
+      - {action: set_pose, pose: [0.20, 0.20, 0.0]}
+      - {action: set_goal, pose: [0.20, 0.20, 0.0]}    # start == goal
+      - {action: step,    count: 5, dt: 0.05}
+      - {action: assert,  key: outcome, value_one_of: [SUCCESS, EMPTY_PATH]}
+
+  - name: tolerance_exact
+    map:
+      resolution: 0.10
+      origin: [0.0, 0.0]
+      occupancy: |
+        ..........
+        ..........
+    sequence:
+      - {action: set_pose, pose: [0.20, 0.20, 0.0]}
+      - {action: set_goal, pose: [0.25, 0.20, 0.10]}     # |Δxy| == xy_tolerance, |Δyaw| == yaw_tolerance
+      - {action: drive_until, condition: goal_reached, max_steps: 100, dt: 0.05}
+      - {action: assert,    key: outcome, value: SUCCESS}
+
+  - name: large_origin
+    map:
+      resolution: 0.10
+      origin: [1.0e5, 1.0e5]      # world coordinates start at 100 km
+      occupancy: |
+        ..........
+        ..........
+    sequence:
+      - {action: set_pose, pose: [100000.10, 100000.10, 0.0]}
+      - {action: set_goal, pose: [100000.50, 100000.20, 0.0]}
+      - {action: drive_until, condition: goal_reached, max_steps: 200, dt: 0.05}
+      - {action: assert,    key: outcome, value: SUCCESS}
+
+  - name: degenerate_path
+    map:
+      resolution: 0.10
+      origin: [0.0, 0.0]
+      occupancy: |
+        ..........
+        ..........
+    sequence:
+      - {action: set_pose, pose: [0.10, 0.10, 0.0]}
+      # Path with duplicates and a back-and-forth segment.
+      - {action: set_path, poses:
+           [[0.10, 0.10, 0.0], [0.10, 0.10, 0.0],
+            [0.20, 0.10, 0.0], [0.15, 0.10, 0.0],
+            [0.30, 0.10, 0.0]]}
+      - {action: drive_until, condition: goal_reached, max_steps: 200, dt: 0.05}
+      - {action: assert,    key: outcome, value_one_of: [SUCCESS, INVALID_PATH]}
+metrics:
+  nan_inf_count: 0
+  collision_count: 0

@@ -1,0 +1,63 @@
+id: S-17
+description: |
+  Boundary-case for the stateful GoalChecker. Once xy_goal_reached_ is set,
+  a brief noise spike that pushes |Δxy| above goal_xy_tolerance must NOT
+  cause the controller to start translating again while it is still rotating
+  to align yaw. The stateful flag is asymmetric on purpose; this scenario
+  pins that semantics down.
+seed: 9876
+tolerances:
+  pose_xy: 1.0e-3
+  pose_yaw: 1.0e-2
+  twist: 1.0e-3
+trials:
+  count: 1
+  seed_strategy: fixed
+plugins:
+  planner:
+    name: astar
+    params:
+      occupied_threshold: 65
+      inflation_radius: 0.20
+      unknown_is_obstacle: true
+  controller:
+    name: lookahead
+    params:
+      kp_xy: 1.0
+      kp_yaw: 1.2
+      max_speed_xy: 0.25
+      max_speed_yaw: 0.8
+      lookahead_dist: 0.30
+      goal_xy_tolerance: 0.05
+      goal_yaw_tolerance: 0.05
+      goal_stateful: true
+map:
+  resolution: 0.10
+  origin: [0.0, 0.0]
+  occupancy: |
+    ..........
+    ..........
+    ..........
+    ..........
+    ..........
+sequence:
+  - {action: set_pose, pose: [0.10, 0.10, 0.0]}
+  - {action: set_goal, pose: [0.50, 0.50, 1.5708]}    # large yaw sweep at the end
+  - {action: drive_until, condition: xy_goal_reached, max_steps: 200, dt: 0.05}
+  - {action: assert, key: xy_goal_reached, value: true}
+  # While the controller is still rotating to meet yaw, slam in a brief
+  # outward noise spike (single frame, then noise off again).
+  - {action: enable_disturbance, kind: pose_noise,
+     value: {sigma_xy: 0.10, sigma_yaw: 0.0, transient_steps: 1}}
+  - {action: step,   count: 1, dt: 0.05}
+  - {action: assert, key: last_twist.vx, value: 0.0, tolerance: 5.0e-3}
+  - {action: assert, key: last_twist.vy, value: 0.0, tolerance: 5.0e-3}
+  - {action: assert, key: xy_goal_reached, value: true}
+  # Continue rotating to goal yaw, finish.
+  - {action: enable_disturbance, kind: pose_noise, value: {sigma_xy: 0.0, sigma_yaw: 0.0}}
+  - {action: drive_until, condition: goal_reached, max_steps: 200, dt: 0.05}
+  - {action: assert, key: outcome, value: SUCCESS}
+metrics:
+  goal_reach_flip_count: 1
+  collision_count: 0
+  nan_inf_count: 0
