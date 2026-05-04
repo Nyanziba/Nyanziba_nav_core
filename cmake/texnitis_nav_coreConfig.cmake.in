@@ -1,3 +1,13 @@
 @PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Eigen3 is a PUBLIC dependency when the library was built with MPPI on.
+# Locate it before pulling in the targets file so downstream consumers
+# don't have to know the option name.
+if(NOT TARGET Eigen3::Eigen)
+    find_dependency(Eigen3 NO_MODULE)
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/texnitis_nav_coreTargets.cmake")
 check_required_components(texnitis_nav_core)

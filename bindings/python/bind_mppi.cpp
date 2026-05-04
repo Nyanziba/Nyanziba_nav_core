@@ -48,8 +48,10 @@ void bindMppi (py::module_ &m) {
                   tnc::Twist2D out;
                   const auto status = self.computeCommand (pose, out);
                   return py::make_tuple (status, out);
-              },
-              py::call_guard<py::gil_scoped_release> ())
+              })
+        // GIL 解放はコールバック中に CPython 内部状態を踏むケースで
+        // SEGV を起こすことが macOS で観測されたため、現状は外している。
+        // CasADi 統合と合わせて再評価する予定。
         .def ("is_goal_reached", &tnm::MecanumMppiController::isGoalReached)
         .def ("cancel", &tnm::MecanumMppiController::cancel)
         .def ("reset",  &tnm::MecanumMppiController::reset);
