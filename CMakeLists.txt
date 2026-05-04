@@ -69,6 +69,32 @@ if(NAV_CORE_WITH_MPPI)
 endif()
 
 # -----------------------------------------------------------------------------
+# Python bindings (pybind11)
+# -----------------------------------------------------------------------------
+
+if(NAV_CORE_BUILD_PYTHON)
+    find_package(pybind11 CONFIG REQUIRED)
+    set(_binding_sources
+        bindings/python/module.cpp
+        bindings/python/bind_types.cpp
+        bindings/python/bind_grid_map.cpp
+        bindings/python/bind_planners.cpp
+        bindings/python/bind_controllers.cpp
+    )
+    if(NAV_CORE_WITH_MPPI)
+        list(APPEND _binding_sources bindings/python/bind_mppi.cpp)
+    endif()
+    pybind11_add_module(_core MODULE ${_binding_sources})
+    target_link_libraries(_core PRIVATE texnitis_nav_core)
+    if(NAV_CORE_WITH_MPPI)
+        target_compile_definitions(_core PRIVATE TEXNITIS_NAV_CORE_WITH_MPPI=1)
+    endif()
+    install(TARGETS _core
+        LIBRARY DESTINATION texnitis_nav_core
+    )
+endif()
+
+# -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
 
