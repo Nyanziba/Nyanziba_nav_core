@@ -15,6 +15,12 @@ jobs:
         mppi: [ON, OFF]
     steps:
       - uses: actions/checkout@v4
+      - name: Install Eigen (Ubuntu)
+        if: matrix.mppi == 'ON' && startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
+      - name: Install Eigen (macOS)
+        if: matrix.mppi == 'ON' && startsWith(matrix.os, 'macos')
+        run: brew install eigen
       - name: Configure
         run: cmake -S . -B build -DNAV_CORE_WITH_MPPI=${{ matrix.mppi }} -DNAV_CORE_BUILD_TESTS=ON
       - name: Build
