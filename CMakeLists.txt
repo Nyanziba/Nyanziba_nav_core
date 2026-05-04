@@ -35,6 +35,8 @@ include(CMakePackageConfigHelpers)
 # Library target
 # -----------------------------------------------------------------------------
 
+find_package(Eigen3 QUIET NO_MODULE)
+
 add_library(texnitis_nav_core STATIC
     src/planners/astar_planner.cpp
     src/planners/height_aware_astar_planner.cpp
@@ -53,6 +55,18 @@ target_compile_features(texnitis_nav_core PUBLIC cxx_std_20)
 set_target_properties(texnitis_nav_core PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
+
+if(NAV_CORE_WITH_MPPI)
+    if(NOT TARGET Eigen3::Eigen)
+        find_package(Eigen3 REQUIRED NO_MODULE)
+    endif()
+    target_sources(texnitis_nav_core PRIVATE
+        src/mppi/mecanum_kinematics.cpp
+        src/mppi/mecanum_mppi_controller.cpp
+    )
+    target_link_libraries(texnitis_nav_core PUBLIC Eigen3::Eigen)
+    target_compile_definitions(texnitis_nav_core PUBLIC TEXNITIS_NAV_CORE_WITH_MPPI=1)
+endif()
 
 # -----------------------------------------------------------------------------
 # Tests

@@ -53,3 +53,17 @@ target_link_libraries(test_m4_height_purepursuit
 )
 
 gtest_discover_tests(test_m4_height_purepursuit)
+
+if(NAV_CORE_WITH_MPPI)
+    add_executable(test_m5_mppi
+        test_m5_mppi.cpp
+    )
+
+    target_link_libraries(test_m5_mppi
+        PRIVATE
+            texnitis_nav_core
+            GTest::gtest_main
+    )
+
+    gtest_discover_tests(test_m5_mppi)
+endif()
