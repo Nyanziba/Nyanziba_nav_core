@@ -78,18 +78,12 @@ jobs:
       - name: Import legacy_runner / run_legacy
         run: |
           # Ensure the python harness modules at least parse + import on a
-          # ROS-less machine. Loading the shared library only happens when
-          # someone calls LegacyHarness(); we do not exercise that here.
-          python - <<'PY'
-          import importlib.util, pathlib
-          for mod in ["tests/legacy_harness/legacy_runner.py",
-                     "tests/legacy_harness/run_legacy.py"]:
-              spec = importlib.util.spec_from_file_location(
-                  pathlib.Path(mod).stem, mod)
-              module = importlib.util.module_from_spec(spec)
-              spec.loader.exec_module(module)
-              print(f"imported {mod}")
-          PY
+          # ROS-less machine. We import them as members of the
+          # `tests.legacy_harness` package because run_legacy.py uses a
+          # relative `from .legacy_runner import LegacyHarness`. The
+          # native shared library is only loaded by LegacyHarness().__init__,
+          # which we do not exercise here.
+          python -c "import tests.legacy_harness.legacy_runner, tests.legacy_harness.run_legacy"
 
   legacy_harness_configure:
     name: legacy_harness CMake configure (Jazzy)
