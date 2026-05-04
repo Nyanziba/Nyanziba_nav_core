@@ -1,6 +1,6 @@
 [build-system]
-requires = ["scikit-build-core>=0.8", "pybind11>=2.12"]
-build-backend = "scikit_build_core.build"
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "texnitis_nav_core"
@@ -35,13 +35,16 @@ dev = [
     "pydocstyle>=6.3",
 ]
 
-[tool.scikit-build]
-# Real CMake wiring lands in milestone M1. The current scaffold purposely
-# disables the bindings build so `pip install .` succeeds before any C++
-# sources exist.
-cmake.version = ">=3.20"
-cmake.args = ["-DNAV_CORE_BUILD_PYTHON=OFF"]
-wheel.packages = ["python/texnitis_nav_core"]
+# Build system note:
+# Until milestone M7 lands the pybind11 _core extension, we install only
+# the pure Python sources via setuptools. M7 will switch back to
+# scikit-build-core so that pip install . compiles the native module too.
+
+[tool.setuptools]
+package-dir = { "" = "python" }
+
+[tool.setuptools.packages.find]
+where = ["python"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

@@ -19,9 +19,109 @@ jobs:
         run: cmake -S . -B build -DNAV_CORE_WITH_MPPI=${{ matrix.mppi }} -DNAV_CORE_BUILD_TESTS=ON
       - name: Build
         run: cmake --build build -j
-      # Tests are wired up starting from milestone M1.
-      # - name: Test
-      #   run: ctest --test-dir build --output-on-failure
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  scenarios:
+    name: scenario YAML / harness import (M0)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml jsonschema
+      - name: Validate scenario YAML
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          import yaml
+
+          scenarios_dir = Path("tests/scenarios")
+          required_top = {"id", "description"}
+          failures = []
+          count = 0
+
+          for sub in sorted(scenarios_dir.iterdir()):
+              if not sub.is_dir() or sub.name in {"S-_template"}:
+                  continue
+              yaml_path = sub / "scenario.yaml"
+              if not yaml_path.exists():
+                  continue
+              count += 1
+              try:
+                  doc = yaml.safe_load(yaml_path.read_text())
+              except yaml.YAMLError as exc:
+                  failures.append(f"{sub.name}: YAML parse error: {exc}")
+                  continue
+              if not isinstance(doc, dict):
+                  failures.append(f"{sub.name}: top-level not a mapping")
+                  continue
+              missing = required_top - set(doc)
+              if missing:
+                  failures.append(f"{sub.name}: missing keys {sorted(missing)}")
+              if doc.get("id") != sub.name:
+                  failures.append(f"{sub.name}: id field {doc.get('id')!r} != folder name")
+              if "sequence" not in doc and "cases" not in doc:
+                  failures.append(f"{sub.name}: missing both `sequence` and `cases`")
+
+          if failures:
+              for line in failures:
+                  print(line, file=sys.stderr)
+              sys.exit(1)
+          print(f"validated {count} scenarios")
+          PY
+      - name: Import legacy_runner / run_legacy
+        run: |
+          # Ensure the python harness modules at least parse + import on a
+          # ROS-less machine. Loading the shared library only happens when
+          # someone calls LegacyHarness(); we do not exercise that here.
+          python - <<'PY'
+          import importlib.util, pathlib
+          for mod in ["tests/legacy_harness/legacy_runner.py",
+                     "tests/legacy_harness/run_legacy.py"]:
+              spec = importlib.util.spec_from_file_location(
+                  pathlib.Path(mod).stem, mod)
+              module = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(module)
+              print(f"imported {mod}")
+          PY
+
+  legacy_harness_configure:
+    name: legacy_harness CMake configure (Jazzy)
+    runs-on: ubuntu-24.04
+    container:
+      image: osrf/ros:jazzy-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure (no legacy package, expect early-return)
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          # We do not have the legacy texnitis_move_base_like package
+          # checked into this repo, so the harness CMake should locate
+          # ament_cmake and then fail fast when find_package
+          # texnitis_move_base_like is REQUIRED. We accept a non-zero
+          # configure exit as long as the failure is exactly that
+          # missing package, not a syntax error in the CMakeLists.
+          set +e
+          cmake -S tests/legacy_harness -B build/legacy_harness 2> configure.err
+          status=$?
+          set -e
+          cat configure.err
+          if grep -q "Could not find a package configuration file" configure.err && \
+             grep -q "texnitis_move_base_like" configure.err; then
+              echo "expected: legacy package not present in CI; configure-time guard worked"
+              exit 0
+          fi
+          if [[ $status -ne 0 ]]; then
+              echo "configure failed for an unexpected reason"
+              exit $status
+          fi
 
   python:
     name: python / ${{ matrix.os }} / py${{ matrix.python }}
