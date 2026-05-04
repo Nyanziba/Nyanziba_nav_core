@@ -6,10 +6,9 @@ project(texnitis_nav_core
 )
 
 # -----------------------------------------------------------------------------
-# This file is a scaffold. Implementation is added incrementally per the plan in
-# docs/architecture.md and docs/contributing/release_process.md. The build is
-# intentionally a no-op until M1 lands; downstream tooling (pip / colcon) can
-# still discover the project and verify configure-time wiring.
+# Milestone M1: header-only INTERFACE library exposing the core POD types,
+# logger and result enums. Implementation sources (planners / controllers /
+# MPPI) are added in later milestones.
 # -----------------------------------------------------------------------------
 
 set(CMAKE_CXX_STANDARD 20)
@@ -28,12 +27,77 @@ option(NAV_CORE_BUILD_PYTHON "Build pybind11 Python bindings" OFF)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-# Sources, install rules, tests and Python bindings will be wired up in
-# subsequent milestones. This scaffold purposely stops here so a fresh clone
-# can configure cleanly without requiring Eigen / CasADi / pybind11 to be
-# installed yet.
+# -----------------------------------------------------------------------------
+# Library target
+# -----------------------------------------------------------------------------
 
-message(STATUS "texnitis_nav_core: scaffold configure complete (no targets yet)")
+add_library(texnitis_nav_core INTERFACE)
+add_library(texnitis_nav_core::texnitis_nav_core ALIAS texnitis_nav_core)
+
+target_include_directories(texnitis_nav_core
+    INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+target_compile_features(texnitis_nav_core INTERFACE cxx_std_20)
+
+# -----------------------------------------------------------------------------
+# Tests
+# -----------------------------------------------------------------------------
+
+if(NAV_CORE_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# -----------------------------------------------------------------------------
+# Install / export
+# -----------------------------------------------------------------------------
+
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING
+        PATTERN "*.hpp"
+)
+
+install(TARGETS texnitis_nav_core
+    EXPORT texnitis_nav_coreTargets
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(EXPORT texnitis_nav_coreTargets
+    FILE texnitis_nav_coreTargets.cmake
+    NAMESPACE texnitis_nav_core::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/texnitis_nav_core
+)
+
+set(_config_in ${CMAKE_CURRENT_LIST_DIR}/cmake/texnitis_nav_coreConfig.cmake.in)
+if(NOT EXISTS ${_config_in})
+    file(WRITE ${_config_in} [[
+@PACKAGE_INIT@
+include("${CMAKE_CURRENT_LIST_DIR}/texnitis_nav_coreTargets.cmake")
+check_required_components(texnitis_nav_core)
+]])
+endif()
+
+configure_package_config_file(
+    ${_config_in}
+    ${CMAKE_CURRENT_BINARY_DIR}/texnitis_nav_coreConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/texnitis_nav_core
+)
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/texnitis_nav_coreConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/texnitis_nav_coreConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/texnitis_nav_coreConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/texnitis_nav_core
+)
+
+message(STATUS "texnitis_nav_core: M1 INTERFACE library configured")
 message(STATUS "  NAV_CORE_WITH_MPPI    = ${NAV_CORE_WITH_MPPI}")
 message(STATUS "  NAV_CORE_BUILD_TESTS  = ${NAV_CORE_BUILD_TESTS}")
 message(STATUS "  NAV_CORE_BUILD_PYTHON = ${NAV_CORE_BUILD_PYTHON}")

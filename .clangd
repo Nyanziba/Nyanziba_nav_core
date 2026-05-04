@@ -1,0 +1,19 @@
+# clangd configuration. macOS で開発するときに pixi global の ROS 2 Jazzy
+# 環境のヘッダ（rclcpp, geometry_msgs, pluginlib 等）を補完できるようにする。
+#
+# Linux + Jazzy 環境では `/opt/ros/jazzy/include` が AMENT_PREFIX_PATH 経由で
+# 見つかる前提なので、追加 include は不要。
+#
+# pixi global 環境のパスはユーザーごとに異なる可能性があるため、
+# `If: PathMatch:` でこのリポに限定し、絶対パスを Add する。チームで
+# 別の場所に pixi 環境を置いている場合はここを書き換える。
+If:
+  PathMatch:
+    - tests/legacy_harness/.*\.(cpp|hpp)
+    - bindings/python/.*\.(cpp|hpp)
+
+CompileFlags:
+  Add:
+    - -std=c++20
+    - -isystem/Users/nyanziba/.pixi/envs/default/include
+    - -isystem/Users/nyanziba/.pixi/envs/default/include/eigen3

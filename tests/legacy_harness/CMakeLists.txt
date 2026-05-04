@@ -7,13 +7,17 @@ project(texnitis_nav_core_legacy_harness CXX)
 # Python can drive via ctypes (see legacy_runner.py).
 #
 # Required environment:
-#   - ROS 2 Jazzy on Ubuntu 24.04 (the same as the legacy package targets)
-#   - Source `install/setup.bash` of a colcon workspace that has built
-#     `texnitis_move_base_like` and `mecanum_mppi_controller` first.
+#   - ROS 2 Jazzy.
+#     - Linux  (Ubuntu 24.04): `source /opt/ros/jazzy/setup.bash`
+#     - macOS  (pixi global):  `source /Users/<you>/.pixi/envs/default/setup.zsh`
+#       (the `default` env in pixi-global.toml has ros-jazzy-desktop installed)
+#   - Then source the `install/setup.bash` of a colcon workspace that has
+#     built `texnitis_move_base_like` (and optionally
+#     `mecanum_mppi_controller`) first, so pluginlib can resolve the
+#     legacy plugin classes.
 #
 # Usage from the texnitis_nav_core repo root:
-#   cmake -S tests/legacy_harness -B build/legacy_harness \
-#         -DLEGACY_PACKAGE_DIR=/path/to/R2_packages/navigation/texnitis_move_base_like
+#   cmake -S tests/legacy_harness -B build/legacy_harness
 #   cmake --build build/legacy_harness -j
 
 set(CMAKE_CXX_STANDARD 20)

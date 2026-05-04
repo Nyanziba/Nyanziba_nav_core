@@ -1,0 +1,3 @@
+@PACKAGE_INIT@
+include("${CMAKE_CURRENT_LIST_DIR}/texnitis_nav_coreTargets.cmake")
+check_required_components(texnitis_nav_core)

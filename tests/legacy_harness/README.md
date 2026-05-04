@@ -74,6 +74,13 @@ tests/legacy_harness/
 
 ## fixture を「事実化」する作業の流れ
 
+### 0. ROS 2 Jazzy 環境の用意
+
+- **Linux (Ubuntu 24.04)**: `source /opt/ros/jazzy/setup.bash`
+- **macOS (pixi global)**: `source ~/.pixi/envs/default/setup.zsh`
+
+### 1〜5
+
 1. 旧リポをビルド: `colcon build --packages-select texnitis_move_base_like`
 2. ハーネスをビルド: `cmake -S tests/legacy_harness -B build/legacy_harness && cmake --build build/legacy_harness`
 3. 全シナリオを記録: `python -m tests.legacy_harness.run_legacy --scenarios tests/scenarios --record`

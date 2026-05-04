@@ -24,13 +24,23 @@ scenarios/                   YAML scenarios shared between C++ and Python tests
 docs/                        architecture / design rationale / algorithms / usage / contributing
 ```
 
-## ビルド（C++ コアのみ）
+## ビルド（C++ コアのみ、ROS 不要）
 
 ```bash
-cmake -S . -B build -DNAV_CORE_BUILD_TESTS=ON -DNAV_CORE_WITH_MPPI=ON
+cmake -S . -B build -DNAV_CORE_BUILD_TESTS=ON -DNAV_CORE_WITH_MPPI=OFF
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
+
+## ビルド（legacy_harness 等で ROS 2 Jazzy が必要なとき）
+
+- **Linux (Ubuntu 24.04)**: `source /opt/ros/jazzy/setup.bash`
+- **macOS (pixi global)**: `source ~/.pixi/envs/default/setup.zsh`
+  （pixi-global.toml の `default` env に `ros-jazzy-desktop` が入っている前提）
+
+その後 colcon workspace で `texnitis_move_base_like` をビルドし、
+`tests/legacy_harness/CMakeLists.txt` を `cmake -S tests/legacy_harness -B
+build/legacy_harness` で構成する。詳細は [tests/legacy_harness/README.md](tests/legacy_harness/README.md) を参照。
 
 ## インストール（Python バインディング + シミュレータ）
 
