@@ -40,6 +40,20 @@ if(NOT ament_cmake_FOUND)
     return()
 endif()
 
+# nlohmann_json for parsing the JSON parameter blobs that legacy_runner.py
+# hands over the C ABI. Pulled in via FetchContent so the harness does not
+# require a system install.
+include(FetchContent)
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+    GIT_SHALLOW TRUE
+)
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+set(JSON_Install OFF CACHE INTERNAL "")
+FetchContent_MakeAvailable(nlohmann_json)
+
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -82,6 +96,8 @@ ament_target_dependencies(legacy_harness
     pluginlib
     texnitis_move_base_like
 )
+
+target_link_libraries(legacy_harness PRIVATE nlohmann_json::nlohmann_json)
 
 if(casadi_FOUND AND mecanum_mppi_controller_FOUND)
     target_compile_definitions(legacy_harness PRIVATE LEGACY_HARNESS_HAS_MPPI=1)
