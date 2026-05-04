@@ -1,8 +1,16 @@
-# path_smoothing の解説（骨格）
+# path_postprocessing（予定）
 
-> このファイルは骨格段階。対応するマイルストーン完了時に「解こうとする問題 / アルゴリズム要点 / 計算量 / パラメータ / サンプルコード / 参考文献」を埋める。
+A\* のジグザグ出力を Pure Pursuit / MPPI が滑らかに追従できるよう、
+B-spline / line cleaner / velocity profiler を後処理で挟むモジュール。
 
-- 関連ヘッダ: `include/texnitis_nav_core/` 配下（実装後にリンクを貼る）
-- 関連サンプル: `examples/` 配下（実装後にリンクを貼る）
-- 関連シナリオ: `scenarios/` 配下（実装後にリンクを貼る）
-- 設計判断: [../design_rationale.md](../design_rationale.md)
+> 実装は M9 以降のフォローアップで本リポジトリに追加予定。
+> 現状は API シェイプ（`include/texnitis_nav_core/path_postprocessing/`）
+> の予約ディレクトリのみ存在し、機能は未実装。
+
+設計方針:
+
+- `LineCleaner`: 重複/逆走 pose を除去（Ramer-Douglas-Peucker）
+- `BsplineSmoother`: 曲率連続な path に再サンプル
+- `VelocityProfiler`: 各セグメントに加速度・jerk 上限を満たす速度を割り当て
+
+シナリオ S-13（曲率連続性）でこの層が機能するかを検証する想定。
