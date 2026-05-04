@@ -37,7 +37,9 @@ include(CMakePackageConfigHelpers)
 
 add_library(texnitis_nav_core STATIC
     src/planners/astar_planner.cpp
+    src/planners/height_aware_astar_planner.cpp
     src/controllers/lookahead_controller.cpp
+    src/controllers/diff_drive_pure_pursuit_controller.cpp
 )
 add_library(texnitis_nav_core::texnitis_nav_core ALIAS texnitis_nav_core)
 

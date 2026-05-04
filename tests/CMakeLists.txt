@@ -41,3 +41,15 @@ target_link_libraries(test_m2_planning
 )
 
 gtest_discover_tests(test_m2_planning)
+
+add_executable(test_m4_height_purepursuit
+    test_m4_height_purepursuit.cpp
+)
+
+target_link_libraries(test_m4_height_purepursuit
+    PRIVATE
+        texnitis_nav_core
+        GTest::gtest_main
+)
+
+gtest_discover_tests(test_m4_height_purepursuit)
