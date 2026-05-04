@@ -29,3 +29,15 @@ target_link_libraries(test_core_smoke
 )
 
 gtest_discover_tests(test_core_smoke)
+
+add_executable(test_m2_planning
+    test_m2_planning.cpp
+)
+
+target_link_libraries(test_m2_planning
+    PRIVATE
+        texnitis_nav_core
+        GTest::gtest_main
+)
+
+gtest_discover_tests(test_m2_planning)

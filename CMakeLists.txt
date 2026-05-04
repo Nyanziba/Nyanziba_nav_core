@@ -6,9 +6,13 @@ project(texnitis_nav_core
 )
 
 # -----------------------------------------------------------------------------
-# Milestone M1: header-only INTERFACE library exposing the core POD types,
-# logger and result enums. Implementation sources (planners / controllers /
-# MPPI) are added in later milestones.
+# Milestones:
+#   M1 added the header-only types / grid view / result / logger.
+#   M2 (this revision) adds PlannerBase / ControllerBase / GoalChecker plus
+#       the AStarPlanner and LookaheadController implementations, switching
+#       the library from INTERFACE to STATIC.
+#   Later milestones will append HeightAwareAStar, DiffDrivePurePursuit and
+#   MPPI sources to the same target.
 # -----------------------------------------------------------------------------
 
 set(CMAKE_CXX_STANDARD 20)
@@ -31,16 +35,22 @@ include(CMakePackageConfigHelpers)
 # Library target
 # -----------------------------------------------------------------------------
 
-add_library(texnitis_nav_core INTERFACE)
+add_library(texnitis_nav_core STATIC
+    src/planners/astar_planner.cpp
+    src/controllers/lookahead_controller.cpp
+)
 add_library(texnitis_nav_core::texnitis_nav_core ALIAS texnitis_nav_core)
 
 target_include_directories(texnitis_nav_core
-    INTERFACE
+    PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_compile_features(texnitis_nav_core INTERFACE cxx_std_20)
+target_compile_features(texnitis_nav_core PUBLIC cxx_std_20)
+set_target_properties(texnitis_nav_core PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+)
 
 # -----------------------------------------------------------------------------
 # Tests
