@@ -14,6 +14,8 @@
 #include "texnitis_nav_core/goal_checker.hpp"
 
 #include <atomic>
+#include <optional>
+#include <vector>
 
 namespace texnitis::nav_core {
 
@@ -44,12 +46,27 @@ class LookaheadController final : public ControllerBase {
         cancel_flag_.store (false, std::memory_order_relaxed);
         goal_checker_.reset ();
         path_.poses.clear ();
+        cumulative_arc_lengths_.clear ();
+        start_yaw_.reset ();
     }
 
    private:
+    /// rotate_while_moving 用: 最近傍 index までの走破率 [0,1] を返す。
+    [[nodiscard]] double progressAt (size_t nearest_idx) const;
+
+    /// rotate_while_moving 用: 進捗率から補間した目標 yaw を返す。
+    [[nodiscard]] double interpolatedTargetYaw (double progress) const;
+
     LookaheadParams params_{};
     GoalChecker     goal_checker_{};
     Path2D          path_;
+
+    /// setPlan 時に前計算する経路の累積弧長。poses と同じ要素数。
+    std::vector<double> cumulative_arc_lengths_;
+
+    /// rotate_while_moving の補間開始 yaw。setPlan 後の最初の
+    /// computeCommand で現在姿勢から捕捉する。
+    std::optional<double> start_yaw_;
 
     std::atomic<bool> cancel_flag_{false};
     /// `isGoalReached` を `const` にするためのキャッシュ（mutable）。

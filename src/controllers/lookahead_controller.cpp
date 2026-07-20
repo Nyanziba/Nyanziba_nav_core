@@ -4,6 +4,7 @@
 
 #include "texnitis_nav_core/controllers/lookahead_controller.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -14,6 +15,38 @@ void LookaheadController::setPlan (const Path2D &path) {
     goal_checker_.reset ();
     last_goal_reached_ = false;
     cancel_flag_.store (false, std::memory_order_relaxed);
+    start_yaw_.reset ();
+
+    cumulative_arc_lengths_.clear ();
+    cumulative_arc_lengths_.reserve (path_.poses.size ());
+    double accumulated = 0.0;
+    for (size_t i = 0; i < path_.poses.size (); ++i) {
+        if (i > 0) {
+            const double dx = path_.poses[i].x - path_.poses[i - 1].x;
+            const double dy = path_.poses[i].y - path_.poses[i - 1].y;
+            accumulated += std::hypot (dx, dy);
+        }
+        cumulative_arc_lengths_.push_back (accumulated);
+    }
+}
+
+double LookaheadController::progressAt (size_t nearest_idx) const {
+    if (cumulative_arc_lengths_.empty () || nearest_idx >= cumulative_arc_lengths_.size ()) {
+        return 1.0;
+    }
+    const double total_length = cumulative_arc_lengths_.back ();
+    if (total_length <= 0.0) {
+        return 1.0;
+    }
+    return cumulative_arc_lengths_[nearest_idx] / total_length;
+}
+
+double LookaheadController::interpolatedTargetYaw (double progress) const {
+    const double start_yaw = start_yaw_.value_or (path_.poses.back ().yaw);
+    const double yaw_span  = shortestAngularDiff (start_yaw, path_.poses.back ().yaw);
+    const double exponent  = std::max (1.0, params_.rotate_while_moving_exponent);
+    const double weight    = std::pow (clamp (progress, 0.0, 1.0), exponent);
+    return start_yaw + yaw_span * weight;
 }
 
 ControllerResult LookaheadController::computeCommand (const Pose2D &current,
@@ -27,6 +60,10 @@ ControllerResult LookaheadController::computeCommand (const Pose2D &current,
     }
 
     const Pose2D goal = path_.poses.back ();
+
+    if (!start_yaw_.has_value ()) {
+        start_yaw_ = current.yaw;
+    }
 
     if (goal_checker_.isXYReached (current, goal) && goal_checker_.isYawReached (current, goal)) {
         last_goal_reached_ = true;
@@ -94,12 +131,18 @@ ControllerResult LookaheadController::computeCommand (const Pose2D &current,
         } else {
             vx = clamp (params_.kp_xy * ex_body, -params_.max_speed_xy, params_.max_speed_xy);
             vy = clamp (params_.kp_xy * ey_body, -params_.max_speed_xy, params_.max_speed_xy);
-            const double target_yaw = std::atan2 (ey_world, ex_world);
+
+            // 移動中の目標 yaw。rotate_while_moving なら開始 yaw → ゴール
+            // yaw を進捗率^exponent で補間（ゴールに近づくほど急に回る）、
+            // 従来モードなら進行方向へ機首を向ける。
+            const double target_yaw = params_.rotate_while_moving
+                                          ? interpolatedTargetYaw (progressAt (nearest_idx))
+                                          : std::atan2 (ey_world, ex_world);
             const double eyaw       = shortestAngularDiff (current.yaw, target_yaw);
             wz = clamp (params_.kp_yaw * eyaw, -params_.max_speed_yaw, params_.max_speed_yaw);
 
             const double linear_mag = std::hypot (vx, vy);
-            if (linear_mag > params_.linear_threshold_for_wz) {
+            if (!params_.rotate_while_moving && linear_mag > params_.linear_threshold_for_wz) {
                 wz = clamp (wz, -params_.max_wz_when_moving, params_.max_wz_when_moving);
             }
         }

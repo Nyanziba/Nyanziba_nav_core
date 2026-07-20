@@ -34,6 +34,17 @@ struct LookaheadParams {
     /// true なら差動駆動として `vy=0` を強制し、yaw 整合を先に取る。
     bool use_diff_drive{false};
 
+    /// true なら（ホロノミック時のみ）移動中に開始 yaw からゴール yaw へ
+    /// 進捗率ベースで補間しながら回転する。false は従来挙動（到着後に
+    /// その場回転）。このモードでは `max_wz_when_moving` のクランプは
+    /// 適用せず、`max_speed_yaw` のみが上限になる。
+    bool rotate_while_moving{false};
+
+    /// 補間カーブの冪指数（>= 1.0）。目標 yaw は
+    /// `start_yaw + Δyaw * progress^exponent`。1.0 で線形、大きいほど
+    /// 序盤は回らずゴール付近で急に回る。
+    double rotate_while_moving_exponent{2.0};
+
     /// GoalChecker の挙動。`stateful=true` で 1 度到達したら剥がさない。
     GoalCheckerParams goal_checker{};
 };
