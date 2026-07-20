@@ -49,6 +49,25 @@ double LookaheadController::interpolatedTargetYaw (double progress) const {
     return start_yaw + yaw_span * weight;
 }
 
+double LookaheadController::feedforwardYawRate (double progress, double linear_speed) const {
+    if (cumulative_arc_lengths_.empty ()) {
+        return 0.0;
+    }
+    const double total_length = cumulative_arc_lengths_.back ();
+    if (total_length <= 0.0) {
+        return 0.0;
+    }
+    // yaw(s) = start + Δyaw * (s/L)^k を時間微分すると
+    //   d(yaw)/dt = Δyaw * k * (s/L)^(k-1) * (ds/dt) / L
+    // ds/dt は経路に沿った並進速度で近似する。
+    const double start_yaw = start_yaw_.value_or (path_.poses.back ().yaw);
+    const double yaw_span  = shortestAngularDiff (start_yaw, path_.poses.back ().yaw);
+    const double exponent  = std::max (1.0, params_.rotate_while_moving_exponent);
+    const double clamped_progress = clamp (progress, 0.0, 1.0);
+    return yaw_span * exponent * std::pow (clamped_progress, exponent - 1.0) *
+           linear_speed / total_length;
+}
+
 ControllerResult LookaheadController::computeCommand (const Pose2D &current,
                                                       Twist2D      &cmd_out) {
     cmd_out = Twist2D{};
@@ -135,11 +154,20 @@ ControllerResult LookaheadController::computeCommand (const Pose2D &current,
             // 移動中の目標 yaw。rotate_while_moving なら開始 yaw → ゴール
             // yaw を進捗率^exponent で補間（ゴールに近づくほど急に回る）、
             // 従来モードなら進行方向へ機首を向ける。
-            const double target_yaw = params_.rotate_while_moving
-                                          ? interpolatedTargetYaw (progressAt (nearest_idx))
-                                          : std::atan2 (ey_world, ex_world);
-            const double eyaw       = shortestAngularDiff (current.yaw, target_yaw);
-            wz = clamp (params_.kp_yaw * eyaw, -params_.max_speed_yaw, params_.max_speed_yaw);
+            if (params_.rotate_while_moving) {
+                const double progress   = progressAt (nearest_idx);
+                const double target_yaw = interpolatedTargetYaw (progress);
+                const double eyaw       = shortestAngularDiff (current.yaw, target_yaw);
+                // フィードフォワード + P 補正。FF が主で、P は追従誤差の
+                // 後始末だけを受け持つので補間カーブへの遅れが出ない。
+                const double wz_ff = feedforwardYawRate (progress, std::hypot (vx, vy));
+                wz = clamp (wz_ff + params_.kp_yaw * eyaw,
+                            -params_.max_speed_yaw, params_.max_speed_yaw);
+            } else {
+                const double target_yaw = std::atan2 (ey_world, ex_world);
+                const double eyaw       = shortestAngularDiff (current.yaw, target_yaw);
+                wz = clamp (params_.kp_yaw * eyaw, -params_.max_speed_yaw, params_.max_speed_yaw);
+            }
 
             const double linear_mag = std::hypot (vx, vy);
             if (!params_.rotate_while_moving && linear_mag > params_.linear_threshold_for_wz) {

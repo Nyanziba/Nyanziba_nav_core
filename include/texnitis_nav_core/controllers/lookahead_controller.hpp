@@ -57,6 +57,10 @@ class LookaheadController final : public ControllerBase {
     /// rotate_while_moving 用: 進捗率から補間した目標 yaw を返す。
     [[nodiscard]] double interpolatedTargetYaw (double progress) const;
 
+    /// rotate_while_moving 用: 補間カーブの時間微分 (あるべき角速度)。
+    /// P 項が誤差の後追いにならないようフィードフォワードとして加える。
+    [[nodiscard]] double feedforwardYawRate (double progress, double linear_speed) const;
+
     LookaheadParams params_{};
     GoalChecker     goal_checker_{};
     Path2D          path_;

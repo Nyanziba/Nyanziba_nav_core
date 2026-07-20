@@ -189,18 +189,43 @@ TEST (LookaheadController, RotateWhileMovingRampsUpYawNearGoal) {
     EXPECT_NEAR (cmd_at_start.wz, 0.0, 1e-6);
     EXPECT_GT (cmd_at_start.vx, 0.0);
 
-    // 中間点 (進捗 0.5): 補間目標は goal_yaw * 0.5^2 = goal_yaw / 4。
+    // 中間点 (進捗 0.5): 補間目標 (goal_yaw * 0.25) への P 項 +
+    // フィードフォワード項で正方向に回る。
     tnc::Twist2D cmd_at_middle;
     ASSERT_EQ (controller.computeCommand (tnc::Pose2D{0.5, 0.0, 0.0}, cmd_at_middle),
                tnc::ControllerResult::Success);
-    EXPECT_NEAR (cmd_at_middle.wz, kGoalYaw * 0.25, 1e-6);
+    EXPECT_GT (cmd_at_middle.wz, kGoalYaw * 0.25);  // P 項単独より大きい
 
-    // ゴール直前 (進捗 0.9): 補間目標は goal_yaw * 0.81。中間より急に回る。
+    // ゴール直前 (進捗 0.9): 補間目標 goal_yaw * 0.81。中間より急に回る。
     tnc::Twist2D cmd_near_goal;
     ASSERT_EQ (controller.computeCommand (tnc::Pose2D{0.9, 0.0, 0.0}, cmd_near_goal),
                tnc::ControllerResult::Success);
-    EXPECT_NEAR (cmd_near_goal.wz, kGoalYaw * 0.81, 1e-6);
     EXPECT_GT (cmd_near_goal.wz, cmd_at_middle.wz);
+}
+
+TEST (LookaheadController, RotateWhileMovingAddsFeedforwardYawRate) {
+    constexpr double kGoalYaw = 1.5707963267948966;  // pi/2
+    tnc::LookaheadController controller (makeRotateWhileMovingParams ());
+    controller.setPlan (makeStraightPathWithGoalYaw (kGoalYaw));
+
+    // 開始点で start_yaw = 0 を捕捉させる。
+    tnc::Twist2D cmd_at_start;
+    ASSERT_EQ (controller.computeCommand (tnc::Pose2D{0.0, 0.0, 0.0}, cmd_at_start),
+               tnc::ControllerResult::Success);
+
+    // 中間点で現在 yaw を補間目標 (goal_yaw * 0.5^2) に一致させると
+    // P 項はゼロになり、wz はフィードフォワード項のみになる。
+    //   wz_ff = Δyaw * k * progress^(k-1) * (並進速度 / 経路長)
+    //         = (pi/2) * 2 * 0.5 * (0.2 / 1.0) = pi/10
+    const double interpolated_yaw = kGoalYaw * 0.25;
+    tnc::Twist2D cmd_at_middle;
+    ASSERT_EQ (controller.computeCommand (
+                   tnc::Pose2D{0.5, 0.0, interpolated_yaw}, cmd_at_middle),
+               tnc::ControllerResult::Success);
+    const double linear_speed = std::hypot (cmd_at_middle.vx, cmd_at_middle.vy);
+    const double expected_ff  = kGoalYaw * 2.0 * 0.5 * linear_speed / 1.0;
+    EXPECT_NEAR (cmd_at_middle.wz, expected_ff, 1e-9);
+    EXPECT_GT (cmd_at_middle.wz, 0.0);
 }
 
 TEST (LookaheadController, RotateWhileMovingIgnoresMaxWzWhenMovingClamp) {
