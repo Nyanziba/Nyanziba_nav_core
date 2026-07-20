@@ -20,6 +20,23 @@
 4. 差動駆動: `wz` を yaw 差で出し、yaw 整合中は前進しない
 5. XY 到達後はゴール yaw に整合する回転に切替
 
+## 移動しながらの回頭（`rotate_while_moving`）
+
+ホロノミック時のみ有効。従来の「到着してからその場回転」ではなく、
+経路の走破率 `progress`（累積弧長ベース、0〜1）に応じて開始 yaw から
+ゴール yaw へ補間しながら回る。
+
+- 目標 yaw: `yaw(progress) = start_yaw + Δyaw * progress^k`
+  （`k = rotate_while_moving_exponent`、`k > 1` でゴールに近づくほど
+  急に回る。`start_yaw` は `setPlan` 後最初の `computeCommand` で
+  現在姿勢から捕捉）
+- 指令 wz: フィードフォワード + P 補正
+  `wz = Δyaw * k * progress^(k-1) * v / L + kp_yaw * eyaw`
+  （`v` は並進速度、`L` は経路全長）。FF が主体なので補間カーブへの
+  追従遅れがほぼ出ない
+- このモードでは `max_wz_when_moving` のクランプは適用されず、
+  `max_speed_yaw` のみが上限になる
+
 ## 主なパラメータ（`LookaheadParams`）
 
 | フィールド | 既定 | 意味 |
@@ -30,6 +47,8 @@
 | `linear_threshold_for_wz` | 0.01 | 並進中の旋回抑制スレ |
 | `max_wz_when_moving` | 0.0 | 並進中の最大 wz |
 | `use_diff_drive` | false | 差動駆動切替 |
+| `rotate_while_moving` | false | 移動中にゴール yaw へ補間回頭（ホロノミックのみ） |
+| `rotate_while_moving_exponent` | 2.0 | 補間カーブの冪指数（大きいほど終盤に急回頭） |
 | `goal_checker.{xy,yaw}_tolerance` | 0.05 / 0.10 | 到達許容 |
 | `goal_checker.stateful` | true | XY 到達後に剥がさない |
 
