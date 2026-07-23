@@ -44,31 +44,4 @@ void bindGridMapView (py::module_ &m) {
         .def ("in_bounds", &tnc::GridMapView::inBounds)
         .def ("at", &tnc::GridMapView::at);
 
-    py::class_<tnc::HeightGridView> (m, "HeightGridView")
-        .def (py::init<> ())
-        .def_static (
-            "from_numpy",
-            [] (py::array_t<int8_t, py::array::c_style | py::array::forcecast> data,
-                double resolution, double origin_x, double origin_y) {
-                if (data.ndim () != 2) {
-                    throw std::runtime_error (
-                        "HeightGridView.from_numpy expects a 2D array");
-                }
-                tnc::HeightGridView view;
-                view.data       = data.data ();
-                view.height     = static_cast<int> (data.shape (0));
-                view.width      = static_cast<int> (data.shape (1));
-                view.resolution = resolution;
-                view.origin_x   = origin_x;
-                view.origin_y   = origin_y;
-                return view;
-            },
-            py::arg ("data"), py::arg ("resolution") = 0.05,
-            py::arg ("origin_x") = 0.0, py::arg ("origin_y") = 0.0,
-            py::keep_alive<0, 1> ())
-        .def_readwrite ("width", &tnc::HeightGridView::width)
-        .def_readwrite ("height", &tnc::HeightGridView::height)
-        .def_readwrite ("resolution", &tnc::HeightGridView::resolution)
-        .def_readwrite ("origin_x", &tnc::HeightGridView::origin_x)
-        .def_readwrite ("origin_y", &tnc::HeightGridView::origin_y);
 }

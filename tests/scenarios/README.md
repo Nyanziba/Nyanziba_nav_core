@@ -22,7 +22,6 @@ YAML は C++（yaml-cpp / nlohmann_json）と Python（PyYAML / json）の両方
 | S-08 | 到達不能ゴールで NoPathFound |
 | S-09 | 空 path で computeCommand |
 | S-10 | MPPI 再現性（CasADi ON/OFF 一致） |
-| S-11 | HeightProvider null 安全 |
 | S-12 | コの字を走破直後の折り返し |
 | S-13 | path smoothing 後の曲率連続性 |
 | S-14 | 実機相当 (制御遅延 / 量子化 / 加速度上限) |

@@ -42,17 +42,29 @@ target_link_libraries(test_m2_planning
 
 gtest_discover_tests(test_m2_planning)
 
-add_executable(test_m4_height_purepursuit
-    test_m4_height_purepursuit.cpp
+add_executable(test_map_preprocessor test_map_preprocessor.cpp)
+target_link_libraries(test_map_preprocessor PRIVATE texnitis_nav_core GTest::gtest_main)
+gtest_discover_tests(test_map_preprocessor)
+
+add_executable(test_motion_models test_motion_models.cpp)
+target_link_libraries(test_motion_models PRIVATE texnitis_nav_core GTest::gtest_main)
+gtest_discover_tests(test_motion_models)
+
+add_executable(test_kinematic_time_astar test_kinematic_time_astar.cpp)
+target_link_libraries(test_kinematic_time_astar PRIVATE texnitis_nav_core GTest::gtest_main)
+gtest_discover_tests(test_kinematic_time_astar)
+
+add_executable(test_m4_purepursuit
+    test_m4_purepursuit.cpp
 )
 
-target_link_libraries(test_m4_height_purepursuit
+target_link_libraries(test_m4_purepursuit
     PRIVATE
         texnitis_nav_core
         GTest::gtest_main
 )
 
-gtest_discover_tests(test_m4_height_purepursuit)
+gtest_discover_tests(test_m4_purepursuit)
 
 if(NAV_CORE_WITH_MPPI)
     add_executable(test_m5_mppi

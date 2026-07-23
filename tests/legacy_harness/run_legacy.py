@@ -38,7 +38,6 @@ from .legacy_runner import LegacyHarness
 
 _PLANNER_PLUGIN_NAMES: dict[str, str] = {
     "astar":              "texnitis_move_base_like::AStarPlanner",
-    "height_aware_astar": "texnitis_move_base_like::HeightAwareAStarPlanner",
 }
 
 _CONTROLLER_PLUGIN_NAMES: dict[str, str] = {

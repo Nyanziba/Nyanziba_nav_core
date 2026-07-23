@@ -131,7 +131,7 @@ move_base_flex:
 
     planners:
       - {name: astar,    type: texnitis::mbf_planners::AStarPlanner}
-      - {name: heightaware, type: texnitis::mbf_planners::HeightAwareAStarPlanner}
+      - {name: kinematic_time, type: texnitis::mbf_planners::KinematicTimeAStarPlanner}
     controllers:
       - {name: lookahead, type: texnitis::mbf_controllers::LookaheadController}
       - {name: pursuit,   type: texnitis::mbf_controllers::DiffDrivePurePursuitController}
@@ -145,11 +145,10 @@ move_base_flex:
       inflation_radius: 0.30
       allow_diagonal: true
 
-    heightaware:
+    kinematic_time:
       map_topic: /map
-      height_topic: /height_grid
-      height_lethal_threshold: 50
-      require_height_grid: true
+      terrain_topic: /terrain_grid
+      missing_terrain_policy: allow_2d_only
 
     lookahead:
       lookahead_dist: 0.40
@@ -254,7 +253,7 @@ mbf は `uint32_t outcome` を返します。
 | 53 INVALID_GOAL | `GoalOutOfBounds` | goal がマップ外 |
 | 54 BLOCKED_START | `StartInCollision` | 開始地点が壁の中 |
 | 55 BLOCKED_GOAL | `GoalInCollision` | ゴールが壁の中 |
-| 59 NOT_INITIALIZED | `NotInitialized` | /map 未到着、HeightProvider 未注入 |
+| 59 NOT_INITIALIZED | `NotInitialized` | /map または必須Terrainが未到着 |
 | 100 NO_VALID_CMD | `ComputationFailed` | controller が NaN を返した等 |
 | 104 INVALID_PATH | `EmptyPath` / `PathTooFarFromRobot` | setPlan が空、path 離脱 |
 | 107 CANCELED (ctrl) | `Cancelled` | controller cancel |
@@ -283,8 +282,8 @@ A\* / Lookahead 以外のアルゴリズムを足したい場合:
 - **`No path found` ばかり出る**: `/map` が来ているか確認。`ros2 topic echo /map`
   で MapInfo が出るかを見る。`MapProvider` は transient_local QoS なので、
   publisher が transient_local で出していないと最初の 1 メッセージを取りこぼす。
-- **`NotInitialized` で止まる**: HeightAwareAStar で /height_grid が来ていない。
-  `<name>.require_height_grid: false` で fallback 動作させて回避できる。
+- **`NotInitialized` で止まる**: /map、または設定上必須のTerrainGridが来ていない。
+  2D fallbackを許可する場合は`<name>.missing_terrain_policy: allow_2d_only`にする。
 - **`outcome=104 (INVALID_PATH)` 連発**: setPlan のあとすぐの `isGoalReached` が
   true を返している可能性。`goal_stateful: true` にしているか、`goal_xy_tolerance`
   が大きすぎないか確認。

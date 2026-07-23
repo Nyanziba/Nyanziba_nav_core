@@ -34,7 +34,7 @@
   - **再利用**: 同じコアを Python シミュレータからも叩ける
   - **デバッグ**: ROS の trace と algorithm の trace を分離できる
   - **重複削減**: `worldToMap` や inflation を 1 箇所で書けば、
-    旧 A* と HeightAware で重複していた実装を 1 つに集約できた
+    座標変換やinflationの重複実装を1箇所に集約できた
 
 ## なぜ `MapProvider` をシングルトンにするのか
 

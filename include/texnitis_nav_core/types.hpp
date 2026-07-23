@@ -52,6 +52,22 @@ struct Path2D {
     std::vector<Pose2D> poses;
 };
 
+/// A time-parameterized path. Velocity and acceleration are expressed in the
+/// robot body frame; time_from_start is in seconds.
+struct TrajectoryPoint2D {
+    Pose2D  pose;
+    Twist2D velocity;
+    Twist2D acceleration;
+    double  time_from_start{0.0};
+};
+
+struct Trajectory2D {
+    std::vector<TrajectoryPoint2D> points;
+    [[nodiscard]] double duration () const noexcept {
+        return points.empty () ? 0.0 : points.back ().time_from_start;
+    }
+};
+
 /// @brief 角度を `[-π, π]` に正規化。
 ///
 /// `while` ループは入力の周回数が極端に多い場合に低速だが、ナビゲー

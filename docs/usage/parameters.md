@@ -21,14 +21,6 @@
 | `heuristic_weight` | 1.0 | — |
 | `allow_diagonal` | true | — |
 
-### `HeightAwareAStarParams`
-
-| フィールド | 既定 |
-|---|---|
-| `astar` | `AStarParams` |
-| `height_lethal_threshold` | 50 |
-| `require_height_grid` | true |
-
 ## Controller
 
 ### `LookaheadParams`

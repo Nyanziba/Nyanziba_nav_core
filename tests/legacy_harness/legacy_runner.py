@@ -118,11 +118,6 @@ class _CSignatures:
         lib.legacy_controller_destroy.restype = c_int32
         lib.legacy_controller_destroy.argtypes = [c_int32]
 
-        lib.legacy_planner_set_height_grid.restype = c_int32
-        lib.legacy_planner_set_height_grid.argtypes = [
-            c_int32, c_int8_p, c_int32, c_int32, c_double, c_double, c_double,
-            c_char_p, c_size_t,
-        ]
 
 
 class LegacyHarness:
@@ -297,34 +292,3 @@ class LegacyHarness:
     def destroy_controller(self, handle: int) -> None:
         """Free the controller instance."""
         self._lib.legacy_controller_destroy(handle)
-
-    # ------------------------------------------------------------------
-    # Height grid (HeightAware planner only)
-    # ------------------------------------------------------------------
-
-    def set_height_grid(self, handle: int, *,
-                        height_data: list[list[int]],
-                        resolution: float,
-                        origin: tuple[float, float]) -> None:
-        """Publish a height grid into the planner via its subscription."""
-        height = len(height_data)
-        width = len(height_data[0]) if height > 0 else 0
-        flat: list[int] = []
-        for row in height_data:
-            flat.extend(row)
-        c_int8 = ctypes.c_int8
-        arr = (c_int8 * len(flat))(*flat) if flat else None
-        err = self._err_buf()
-        status = self._lib.legacy_planner_set_height_grid(
-            ctypes.c_int32(handle),
-            ctypes.cast(arr, ctypes.POINTER(c_int8)) if arr else None,
-            ctypes.c_int32(width),
-            ctypes.c_int32(height),
-            ctypes.c_double(resolution),
-            ctypes.c_double(origin[0]),
-            ctypes.c_double(origin[1]),
-            err,
-            ctypes.c_size_t(_ERR_BUF_LEN),
-        )
-        if status < 0:
-            raise RuntimeError(f"legacy_planner_set_height_grid failed: {self._err_text(err)}")

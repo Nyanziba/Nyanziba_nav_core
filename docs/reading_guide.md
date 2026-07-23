@@ -35,9 +35,9 @@ graph LR
 
 | 用語 | 意味 |
 |---|---|
-| **POD 型** | `Pose2D`, `Twist2D`, `Path2D` のような ROS 非依存のプレーン構造体 |
+| **POD 型** | `Pose2D`, `Twist2D`, `Path2D`, `Trajectory2D` のような ROS 非依存のプレーン構造体 |
 | **GridMapView** | `nav_msgs::msg::OccupancyGrid` の `data.data()` を借用するビュー。コピーしない |
-| **HeightProvider** | 高さグリッドの最新値を提供する抽象。subscription はコア外（mbf アダプタ側） |
+| **TerrainLayersView** | elevation[m] と slope (`dz/dx`, `dz/dy`) を任意に借用するROS非依存ビュー |
 | **MapProvider** | mbf プラグインが共有する /map 購読シングルトン |
 | **stateful GoalChecker** | XY 到達フラグが一度立つと、後続の小さな揺らぎでは剥がれない実装 |
 | **fixture** | `tests/scenarios/<id>/expected.json` に固定した正解データ |

@@ -124,8 +124,6 @@ struct PlannerEntry {
     std::shared_ptr<tnh::FakeNode>                            host;
     std::shared_ptr<pluginlib::ClassLoader<tmbl::PlannerBase>> loader;
     std::shared_ptr<tmbl::PlannerBase>                         instance;
-    nav_msgs::msg::OccupancyGrid                               cached_height_grid;
-    bool                                                       has_height_grid{false};
 };
 
 struct ControllerEntry {
@@ -423,63 +421,6 @@ int32_t legacy_controller_destroy (int32_t handle) {
     auto &reg = registry ();
     std::lock_guard<std::mutex> lock (reg.mutex);
     return reg.controllers.erase (handle) ? 0 : kStatusArgError;
-}
-
-int32_t legacy_planner_set_height_grid (int32_t       handle,
-                                        const int8_t *height_data,
-                                        int32_t       width,
-                                        int32_t       height,
-                                        double        resolution,
-                                        double        origin_x,
-                                        double        origin_y,
-                                        char         *err_buf,
-                                        size_t        err_buf_len) {
-    // The legacy HeightAwareAStar planner consumes its height grid via a
-    // ROS subscription. We cannot inject the grid synchronously without
-    // patching the legacy code. Instead, the harness publishes onto the
-    // expected topic and lets the FakeNode's executor deliver it.
-    if (height_data == nullptr || width <= 0 || height <= 0) {
-        writeError (err_buf, err_buf_len, "invalid argument(s)");
-        return kStatusArgError;
-    }
-
-    try {
-        auto &reg = registry ();
-        std::shared_ptr<tnh::FakeNode> host;
-        nav_msgs::msg::OccupancyGrid msg;
-        msg.header.frame_id        = kGlobalFrame;
-        msg.info.resolution        = static_cast<float> (resolution);
-        msg.info.width             = static_cast<uint32_t> (width);
-        msg.info.height            = static_cast<uint32_t> (height);
-        msg.info.origin.position.x = origin_x;
-        msg.info.origin.position.y = origin_y;
-        msg.info.origin.orientation.w = 1.0;
-        msg.data.assign (height_data,
-                         height_data + (static_cast<size_t> (width) * height));
-
-        {
-            std::lock_guard<std::mutex> lock (reg.mutex);
-            auto it = reg.planners.find (handle);
-            if (it == reg.planners.end ()) {
-                writeError (err_buf, err_buf_len, "unknown planner handle");
-                return kStatusArgError;
-            }
-            host = it->second.host;
-            it->second.cached_height_grid = msg;
-            it->second.has_height_grid    = true;
-        }
-
-        msg.header.stamp = host->node ()->now ();
-        auto pub = host->node ()->create_publisher<nav_msgs::msg::OccupancyGrid> (
-            "/height_grid",
-            rclcpp::QoS (rclcpp::KeepLast (1)).reliable ().transient_local ());
-        pub->publish (msg);
-        rclcpp::spin_some (host->node ());
-        return 0;
-    } catch (const std::exception &ex) {
-        writeError (err_buf, err_buf_len, ex.what ());
-        return kStatusInternalError;
-    }
 }
 
 }  // extern "C"

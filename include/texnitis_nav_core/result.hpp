@@ -42,7 +42,7 @@ enum class PlanResult {
     /// `cancel()` が呼ばれて中断された。
     Cancelled,
 
-    /// 必須リソース (例: HeightProvider 高さグリッド) が
+    /// 必須リソース (例: Terrain layer) が
     /// 未到着のまま planPath が呼ばれた。
     NotInitialized,
 
