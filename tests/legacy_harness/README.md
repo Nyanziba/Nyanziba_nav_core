@@ -92,7 +92,6 @@ tests/legacy_harness/
 ## 注意点
 
 - 旧 `mecanum_mppi_plugin` は CasADi に依存するので、ハーネス側でも CasADi 有無で skip できるようにする（`@pytest.mark.skipif(not casadi_available, ...)`）
-- HeightAware 系は `create_subscription` で高さグリッドを取りに行くので、fake Node 側で「subscribe したら即座にシナリオ YAML の `height_map` を渡す」スタブを用意する
 - 旧コード側の決定論性: A\* のタイブレークを再現するため、シナリオ YAML 側の `seed` をプラグインに伝える必要はない（A\* は乱数を使わない）。MPPI は seed を渡す
 - 旧コードを変更してはいけない（fixture を新コアの正解として固定するため、旧コードに修正を入れるとそもそもの基準が動く）。バグがあっても fixture 採取後に新コアで直す形にする
 

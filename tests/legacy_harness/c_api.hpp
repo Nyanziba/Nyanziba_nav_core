@@ -149,21 +149,6 @@ LEGACY_HARNESS_API int32_t legacy_controller_reset (int32_t handle);
 LEGACY_HARNESS_API int32_t legacy_controller_cancel (int32_t handle);
 LEGACY_HARNESS_API int32_t legacy_controller_destroy (int32_t handle);
 
-// -----------------------------------------------------------------------------
-// Optional: deliver a height grid to a HeightAware planner instance.
-// -----------------------------------------------------------------------------
-
-LEGACY_HARNESS_API int32_t
-legacy_planner_set_height_grid (int32_t       handle,
-                                const int8_t *height_data,
-                                int32_t       width,
-                                int32_t       height,
-                                double        resolution,
-                                double        origin_x,
-                                double        origin_y,
-                                char         *err_buf,
-                                size_t        err_buf_len);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif

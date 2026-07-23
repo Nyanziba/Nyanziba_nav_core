@@ -7,7 +7,7 @@ graph TD
   subgraph "texnitis_nav_core (このリポ)"
     types[types.hpp / GridMapView]
     iface[PlannerBase / ControllerBase / MppiControllerBase]
-    impl[A* / HeightAwareAStar / Lookahead / DiffDrivePP / MPPI]
+    impl[A* / KinematicTimeAStar / Lookahead / DiffDrivePP / MPPI]
     pp[path_postprocessing]
     py[pybind11 module _core]
     sim[Python sim package]
@@ -40,7 +40,7 @@ graph TD
 
 | ディレクトリ | 責務 |
 |---|---|
-| `include/texnitis_nav_core/` | 公開ヘッダ。POD 型 (`Pose2D`, `Twist2D`, `Path2D`) と純粋仮想インターフェース |
+| `include/texnitis_nav_core/` | 公開ヘッダ。POD 型 (`Pose2D`, `Twist2D`, `Path2D`, `Trajectory2D`) と純粋仮想インターフェース |
 | `src/` | 実装本体 |
 | `bindings/python/` | pybind11 で `_core` モジュールを生成 |
 | `python/texnitis_nav_core/` | Python パッケージ。`sim/` 配下に純 Python の 2D シミュレータ |

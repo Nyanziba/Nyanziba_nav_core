@@ -11,7 +11,7 @@ project(texnitis_nav_core
 #   M2 (this revision) adds PlannerBase / ControllerBase / GoalChecker plus
 #       the AStarPlanner and LookaheadController implementations, switching
 #       the library from INTERFACE to STATIC.
-#   Later milestones will append HeightAwareAStar, DiffDrivePurePursuit and
+#   Later milestones will append DiffDrivePurePursuit and
 #   MPPI sources to the same target.
 # -----------------------------------------------------------------------------
 
@@ -38,8 +38,13 @@ include(CMakePackageConfigHelpers)
 find_package(Eigen3 QUIET NO_MODULE)
 
 add_library(texnitis_nav_core STATIC
+    src/map_processing/map_preprocessor.cpp
+    src/motion_models/motion_model.cpp
+    src/motion_models/holonomic_motion_model.cpp
+    src/motion_models/differential_drive_motion_model.cpp
+    src/terrain/terrain_traversal_evaluator.cpp
     src/planners/astar_planner.cpp
-    src/planners/height_aware_astar_planner.cpp
+    src/planners/kinematic_time_astar_planner.cpp
     src/controllers/lookahead_controller.cpp
     src/controllers/diff_drive_pure_pursuit_controller.cpp
 )

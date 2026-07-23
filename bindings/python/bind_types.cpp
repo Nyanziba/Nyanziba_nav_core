@@ -1,4 +1,4 @@
-// Binding: POD types (Pose2D / Twist2D / Path2D) and helpers.
+// Binding: POD types and helpers.
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -36,6 +36,19 @@ void bindTypes (py::module_ &m) {
         .def (py::init<> ())
         .def_readwrite ("poses", &tnc::Path2D::poses)
         .def ("__len__", [] (const tnc::Path2D &p) { return p.poses.size (); });
+
+    py::class_<tnc::TrajectoryPoint2D> (m, "TrajectoryPoint2D")
+        .def (py::init<> ())
+        .def_readwrite ("pose", &tnc::TrajectoryPoint2D::pose)
+        .def_readwrite ("velocity", &tnc::TrajectoryPoint2D::velocity)
+        .def_readwrite ("acceleration", &tnc::TrajectoryPoint2D::acceleration)
+        .def_readwrite ("time_from_start", &tnc::TrajectoryPoint2D::time_from_start);
+
+    py::class_<tnc::Trajectory2D> (m, "Trajectory2D")
+        .def (py::init<> ())
+        .def_readwrite ("points", &tnc::Trajectory2D::points)
+        .def ("duration", &tnc::Trajectory2D::duration)
+        .def ("__len__", [] (const tnc::Trajectory2D &t) { return t.points.size (); });
 
     m.def ("normalize_angle", &tnc::normalizeAngle);
     m.def ("clamp", &tnc::clamp, py::arg ("value"), py::arg ("lo"), py::arg ("hi"));
